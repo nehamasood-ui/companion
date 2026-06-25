@@ -1,8 +1,16 @@
-// Tiny time helpers for the read-only itinerary. Times are "HH:MM" 24h strings.
+// Tiny time helpers for the itinerary. Times are "HH:MM" 24h strings.
 
-function toMinutes(t: string): number {
+export function toMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
+}
+
+/** Inverse of toMinutes — clamps into a single day. "615" -> "10:15" */
+export function fromMinutes(total: number): string {
+  const clamped = Math.max(0, Math.min(24 * 60 - 1, Math.round(total)));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 /** "10:00" -> "10:00 AM" */

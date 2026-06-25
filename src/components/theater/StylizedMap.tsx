@@ -28,11 +28,14 @@ export function StylizedMap({
   showPins,
   showRoute,
   activeId,
+  onHover,
 }: {
   plan: Plan;
   showPins: boolean;
   showRoute: boolean;
   activeId?: string | null;
+  /** Hovering a pin lifts the matching timeline card — the reverse link. */
+  onHover?: (id: string | null) => void;
 }) {
   const points = useMemo(
     () => projectPlaces(plan.items.map((i) => i.place), VIEW_W, VIEW_H, 56),
@@ -118,7 +121,7 @@ export function StylizedMap({
               initial={{ opacity: 0, y: -22, scale: 0.5 }}
               animate={
                 showPins
-                  ? { opacity: 1, y: 0, scale: isActive ? 1.18 : 1 }
+                  ? { opacity: 1, y: 0, scale: isActive ? 1.22 : 1 }
                   : { opacity: 0, y: -22, scale: 0.5 }
               }
               transition={{
@@ -127,8 +130,27 @@ export function StylizedMap({
                 damping: 18,
                 delay: showPins ? i * 0.12 : 0,
               }}
-              style={{ transformOrigin: "center", transformBox: "fill-box" }}
+              style={{
+                transformOrigin: "center",
+                transformBox: "fill-box",
+                cursor: "pointer",
+              }}
+              onPointerEnter={() => onHover?.(item.id)}
+              onPointerLeave={() => onHover?.(null)}
             >
+              {/* Pulsing halo while the pin is the focus of attention. */}
+              {isActive && (
+                <motion.circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={16}
+                  fill="#5B57D6"
+                  initial={{ scale: 0.7, opacity: 0.35 }}
+                  animate={{ scale: [0.8, 1.6, 0.8], opacity: [0.3, 0, 0.3] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ transformOrigin: "center", transformBox: "fill-box" }}
+                />
+              )}
               {isActive && (
                 <circle cx={pt.x} cy={pt.y} r={20} fill="#5B57D6" opacity={0.12} />
               )}
@@ -136,18 +158,20 @@ export function StylizedMap({
                 cx={pt.x}
                 cy={pt.y}
                 r={13}
-                fill="#fff"
-                stroke={isActive ? "#5B57D6" : "#5B57D6"}
+                fill={isActive ? "#5B57D6" : "#fff"}
+                stroke="#5B57D6"
                 strokeWidth={isActive ? 3 : 2}
                 style={{ filter: "drop-shadow(0 4px 8px rgba(23,23,31,0.18))" }}
               />
+              {/* Generous transparent hit area so pins are easy to hover. */}
+              <circle cx={pt.x} cy={pt.y} r={20} fill="transparent" />
               <text
                 x={pt.x}
                 y={pt.y + 4}
                 textAnchor="middle"
                 fontSize={12}
                 fontWeight={700}
-                fill="#3F3BB0"
+                fill={isActive ? "#fff" : "#3F3BB0"}
               >
                 {i + 1}
               </text>

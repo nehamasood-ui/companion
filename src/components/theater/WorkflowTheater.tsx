@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, ArrowLeft } from "lucide-react";
-import type { Plan } from "@/lib/types";
+import type { Plan, TimelineItem } from "@/lib/types";
 import { useTheater } from "@/lib/useTheater";
+import { resequence } from "@/lib/schedule";
 import { StepTicker } from "./StepTicker";
 import { StylizedMap } from "./StylizedMap";
 import { PlanHeader } from "@/components/experience/PlanHeader";
@@ -18,6 +19,19 @@ import { spring } from "@/lib/motion";
 export function WorkflowTheater({ plan }: { plan: Plan }) {
   const { activeStep, completed, done, skip } = useTheater();
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // The user's working order of the day. Drag-to-reorder mutates this; the map
+  // and the schedule recompute from it. We re-sync only when the plan itself
+  // changes (e.g. a fresh generation), never on every render.
+  const [order, setOrder] = useState<TimelineItem[]>(plan.items);
+  useEffect(() => setOrder(plan.items), [plan.id, plan.items]);
+
+  const dayStart = plan.items[0]?.start ?? "10:00";
+  const display = useMemo(() => resequence(order, dayStart), [order, dayStart]);
+  const orderedPlan = useMemo<Plan>(
+    () => ({ ...plan, items: display }),
+    [plan, display],
+  );
 
   const phase = done ? 99 : activeStep;
   const showWeather = phase >= 1;
@@ -47,7 +61,7 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
       </header>
 
       <div className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-24 sm:px-6">
-        <PlanHeader plan={plan} showWeather={showWeather} settled={done} />
+        <PlanHeader plan={orderedPlan} showWeather={showWeather} settled={done} />
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_minmax(0,440px)]">
           {/* Left: checklist → itinerary */}
@@ -72,10 +86,12 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
                   transition={spring.gentle}
                 >
                   <Timeline
-                    plan={plan}
+                    items={order}
+                    display={display}
                     show={showTimeline}
                     activeId={activeId}
                     onHover={setActiveId}
+                    onReorder={setOrder}
                   />
                 </motion.div>
               )}
@@ -86,10 +102,11 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
           <div className="order-1 lg:order-2">
             <div className="sticky top-4 h-[300px] sm:h-[380px] lg:h-[460px]">
               <StylizedMap
-                plan={plan}
+                plan={orderedPlan}
                 showPins={showPins}
                 showRoute={showRoute}
                 activeId={activeId}
+                onHover={setActiveId}
               />
             </div>
           </div>
