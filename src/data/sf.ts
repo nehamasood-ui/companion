@@ -1,0 +1,125 @@
+import type { Plan } from "@/lib/types";
+
+// The curated "showcase" plan. V1 is demo-mode: whatever the user types on the
+// landing page, we reveal this hand-tuned San Francisco girls' day. It exists
+// to make the generation reveal feel confident and considered every single time.
+
+export const sfPlan: Plan = {
+  id: "sf-girls-day",
+  title: "Girls' Day in San Francisco",
+  city: "San Francisco",
+  partySize: 5,
+  budgetPerPerson: 60,
+  currency: "$",
+  dateLabel: "Saturday, June 27",
+  weather: { tempF: 68, summary: "Sunny" },
+  vibes: ["Chill", "Creative", "Scenic", "Foodie"],
+  collaborators: [
+    { id: "c1", name: "Ava", initials: "AV", color: "#5B57D6" },
+    { id: "c2", name: "Maya", initials: "MA", color: "#F2784B" },
+    { id: "c3", name: "Sofia", initials: "SO", color: "#0EA5A4" },
+    { id: "c4", name: "Zoe", initials: "ZO", color: "#E0457B" },
+    { id: "c5", name: "Lia", initials: "LI", color: "#7C8B3A" },
+  ],
+  items: [
+    {
+      id: "i1",
+      type: "coffee",
+      title: "Morning coffee",
+      place: {
+        name: "Saint Frank Coffee",
+        neighborhood: "Russian Hill",
+        lat: 37.7989,
+        lng: -122.4216,
+        category: "Specialty café",
+        rating: 4.7,
+        priceLevel: 2,
+      },
+      start: "10:00",
+      end: "10:45",
+      costPerPerson: 5,
+      why: "Calmest specialty café near the studio — bright corner seating that fits all five.",
+      travelFromPrev: null,
+    },
+    {
+      id: "i2",
+      type: "art",
+      title: "Painting session",
+      place: {
+        name: "Painted Heart Studio",
+        neighborhood: "Hayes Valley",
+        lat: 37.7765,
+        lng: -122.4256,
+        category: "Paint & sip",
+        rating: 4.8,
+        priceLevel: 2,
+      },
+      start: "11:15",
+      end: "13:15",
+      costPerPerson: 32,
+      why: "Private BYO-wine session that seats your whole group at one table.",
+      travelFromPrev: { minutes: 9, mode: "drive" },
+    },
+    {
+      id: "i3",
+      type: "walk",
+      title: "Scenic coastal walk",
+      place: {
+        name: "Lands End Trail",
+        neighborhood: "Outer Richmond",
+        lat: 37.7799,
+        lng: -122.5057,
+        category: "Coastal trail",
+        rating: 4.9,
+        priceLevel: 1,
+      },
+      start: "14:00",
+      end: "16:00",
+      costPerPerson: 0,
+      why: "Ocean-cliff loop with the city's best Golden Gate views — easy, flat, photogenic.",
+      travelFromPrev: { minutes: 18, mode: "drive" },
+    },
+    {
+      id: "i4",
+      type: "sunset",
+      title: "Golden-hour sunset",
+      place: {
+        name: "Marshall's Beach",
+        neighborhood: "Presidio",
+        lat: 37.8009,
+        lng: -122.4775,
+        category: "Viewpoint",
+        rating: 4.8,
+        priceLevel: 1,
+      },
+      start: "20:00",
+      end: "20:40",
+      costPerPerson: 0,
+      why: "Faces due west — at this date golden hour lands right on the bridge.",
+      travelFromPrev: { minutes: 12, mode: "drive" },
+    },
+    {
+      id: "i5",
+      type: "food",
+      title: "Dinner",
+      place: {
+        name: "Cafe Zoetrope",
+        neighborhood: "North Beach",
+        lat: 37.7975,
+        lng: -122.407,
+        category: "Italian",
+        rating: 4.6,
+        priceLevel: 2,
+      },
+      start: "20:55",
+      end: "22:45",
+      costPerPerson: 22,
+      why: "Cozy North Beach Italian with shareable plates — keeps the group well under budget.",
+      travelFromPrev: { minutes: 14, mode: "drive" },
+    },
+  ],
+};
+
+export function totalSpend(plan: Plan): number {
+  return plan.items.reduce((sum, item) => sum + item.costPerPerson, 0);
+}
