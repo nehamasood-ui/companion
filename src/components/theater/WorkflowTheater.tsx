@@ -11,6 +11,8 @@ import { StepTicker } from "./StepTicker";
 import { StylizedMap } from "./StylizedMap";
 import { PlanHeader } from "@/components/experience/PlanHeader";
 import { Timeline } from "@/components/experience/Timeline";
+import { RefinementBar } from "@/components/experience/RefinementBar";
+import { ExportBar } from "@/components/experience/ExportBar";
 import { spring } from "@/lib/motion";
 
 // Orchestrates the reveal: the AI workflow checklist plays on the left while the
@@ -60,12 +62,12 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-24 sm:px-6">
+      <div className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6">
         <PlanHeader plan={orderedPlan} showWeather={showWeather} settled={done} />
 
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_minmax(0,440px)]">
-          {/* Left: checklist → itinerary */}
-          <div className="order-2 lg:order-1">
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_minmax(0,420px)]">
+          {/* Left column: the plan, then the ways to evolve and use it. */}
+          <div className="order-2 flex flex-col gap-3 lg:order-1">
             <AnimatePresence mode="wait">
               {!done ? (
                 <motion.div
@@ -98,9 +100,9 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
             </AnimatePresence>
           </div>
 
-          {/* Right: the map assembles throughout */}
+          {/* Right: the map assembles throughout and stays ambient. */}
           <div className="order-1 lg:order-2">
-            <div className="sticky top-4 h-[300px] sm:h-[380px] lg:h-[460px]">
+            <div className="sticky top-3 h-[280px] sm:h-[360px] lg:h-[440px]">
               <StylizedMap
                 plan={orderedPlan}
                 showPins={showPins}
@@ -111,6 +113,21 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
             </div>
           </div>
         </div>
+
+        {/* Evolve-and-use zone: spans the full workspace once the plan settles. */}
+        <AnimatePresence>
+          {done && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring.gentle, delay: 0.5 }}
+              className="mt-3 flex flex-col gap-3"
+            >
+              <RefinementBar />
+              <ExportBar />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Skip affordance during the theater */}
@@ -126,31 +143,6 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
             Skip to plan
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </motion.button>
-        )}
-      </AnimatePresence>
-
-      {/* Settled footer */}
-      <AnimatePresence>
-        {done && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring.gentle, delay: 0.6 }}
-            className="fixed bottom-5 left-1/2 z-20 -translate-x-1/2"
-          >
-            <div className="flex items-center gap-2 rounded-full border border-line bg-surface/90 px-2 py-2 pl-4 shadow-lift backdrop-blur">
-              <span className="text-sm text-ink-soft">Make it more…</span>
-              {["Chill", "Adventurous", "Foodie", "Cheaper"].map((label) => (
-                <span
-                  key={label}
-                  className="cursor-default rounded-full border border-line bg-bg px-3 py-1 text-xs font-medium text-muted"
-                  title="Coming next"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          </motion.div>
         )}
       </AnimatePresence>
     </main>

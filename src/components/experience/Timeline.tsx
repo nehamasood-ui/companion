@@ -106,12 +106,12 @@ function TimelineCard({
       dragListener={false}
       dragControls={controls}
       variants={{
-        hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
+        hidden: { opacity: 0, y: 14, filter: "blur(4px)" },
         show: { opacity: 1, y: 0, filter: "blur(0px)", transition: spring.settle },
       }}
       onPointerEnter={() => onHover?.(item.id)}
       onPointerLeave={() => onHover?.(null)}
-      whileDrag={{ scale: 1.02, boxShadow: "0 18px 40px -12px rgba(23,23,31,0.28)" }}
+      whileDrag={{ scale: 1.015, boxShadow: "0 14px 32px -14px rgba(23,23,31,0.24)" }}
       className="select-none"
     >
       {showConnector && display.travelFromPrev && (
@@ -119,13 +119,13 @@ function TimelineCard({
       )}
 
       <motion.div
-        animate={{ y: active ? -2 : 0 }}
-        transition={spring.snappy}
+        animate={{ y: active ? -1 : 0 }}
+        transition={spring.gentle}
         className={[
-          "group relative flex gap-3.5 rounded-2xl border bg-surface p-3.5 transition-shadow",
+          "group relative flex gap-3.5 rounded-2xl border bg-surface p-3.5 transition-[box-shadow,border-color] duration-300",
           active
-            ? "border-primary/40 shadow-lift"
-            : "border-line shadow-card hover:shadow-lift",
+            ? "border-primary/30 shadow-lift"
+            : "border-line shadow-card hover:border-primary/20",
         ].join(" ")}
       >
         {/* Drag handle — reveals on hover so cards feel clearly movable. */}

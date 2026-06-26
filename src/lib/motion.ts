@@ -6,10 +6,11 @@ import type { Transition, Variants } from "framer-motion";
 export const spring = {
   // The default — gentle, premium, slightly weighted.
   gentle: { type: "spring", stiffness: 210, damping: 26, mass: 0.9 } as Transition,
-  // For things that should land with a little authority (cards settling).
-  settle: { type: "spring", stiffness: 320, damping: 30, mass: 1 } as Transition,
-  // Snappy for hover/press micro-interactions.
-  snappy: { type: "spring", stiffness: 480, damping: 32 } as Transition,
+  // For things that should land softly into place (cards settling). Tuned to
+  // arrive without overshoot — calm and deliberate, never bouncy.
+  settle: { type: "spring", stiffness: 240, damping: 30, mass: 1 } as Transition,
+  // Quiet micro-interactions for hover/press. Deliberately restrained.
+  snappy: { type: "spring", stiffness: 340, damping: 32 } as Transition,
 };
 
 export const ease = {
