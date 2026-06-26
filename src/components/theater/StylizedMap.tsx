@@ -42,6 +42,7 @@ export function StylizedMap({
     [plan],
   );
   const routeD = useMemo(() => smoothPath(points), [points]);
+  const walking = plan.routeMode === "walk";
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-3xl border border-line bg-[#F3F4F8]">
@@ -60,6 +61,11 @@ export function StylizedMap({
           <linearGradient id="route" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#5B57D6" />
             <stop offset="100%" stopColor="#F2784B" />
+          </linearGradient>
+          {/* Walking-first days read in a calmer teal→indigo. */}
+          <linearGradient id="route-walk" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#0EA5A4" />
+            <stop offset="100%" stopColor="#5B57D6" />
           </linearGradient>
         </defs>
 
@@ -97,7 +103,7 @@ export function StylizedMap({
           <motion.path
             d={routeD}
             fill="none"
-            stroke="url(#route)"
+            stroke={walking ? "url(#route-walk)" : "url(#route)"}
             strokeWidth={3}
             strokeLinecap="round"
             strokeDasharray="1 7"

@@ -63,6 +63,8 @@ export interface Plan {
   vibes: string[];
   collaborators: Collaborator[];
   items: TimelineItem[];
+  /** Overall transport character of the day. Refinements can shift this. */
+  routeMode?: "mixed" | "walk";
 }
 
 /** Captures the raw intent from the landing prompt. */

@@ -6,6 +6,76 @@ and a recommendation for what to tackle next.
 
 ---
 
+## v0.4 — The refinement loop
+
+_Branch: `claude/m2-refinement-loop` · Milestone M2 of the post-pivot roadmap_
+
+### What was built
+- **A functional Refine input.** Natural-language follow-ups (typed or via the
+  suggested chips) now revise the plan in place. The chips submit instantly.
+- **A deterministic intent engine** (`lib/refine.ts`). It pattern-matches a
+  prompt to a curated intent and returns a *partial update* — a new plan plus a
+  change-set (`changedIds` / `enteringIds` / a one-line summary) — so the UI
+  animates only the delta. Supported intents:
+  - **walkable / less driving** → travel legs become walks (longer minutes), the
+    map route shifts to a teal "walking" gradient, the day re-times.
+  - **pottery** → swaps the painting session in place for a pottery class.
+  - **sushi** → swaps dinner in place for an omakase counter.
+  - **brunch** → inserts a new brunch stop after coffee; the day re-sequences.
+  - **under $N / cheaper** → swaps the priciest stop for a lighter curated option
+    and resets the budget cap; the tally animates back to green.
+- **Partial-update animation.** Added stops slide in; swapped stops cross-fade in
+  place (keyed on identity, not timing, so a reorder doesn't trigger it); revised
+  cards carry a brief "Revised" mark; the budget bar and map redraw smoothly.
+- **AI whisper + reset.** Each refinement returns a calm one-line whisper (amber
+  when nothing matched — a graceful non-error). A Reset appears once the plan is
+  dirty and restores the original.
+- **Scroll-to-change.** Because the refine bar sits below the timeline, a matched
+  refinement smoothly scrolls the first affected card to center — so you actually
+  watch it update instead of it changing off-screen.
+
+### Key product decisions
+- **Curated intents, not real NLU.** Demo-mode stays bulletproof: the matcher is
+  deterministic and the chips steer toward what's understood. It's deliberately
+  built behind one function (`applyRefinement`) so a live Claude structured-output
+  call can replace the matcher later without touching the UI.
+- **Partial update over regenerate.** The whole point is that the plan *evolves*.
+  Cross-fade-in-place vs. insert-and-settle are distinct on purpose so a swap and
+  an addition feel different.
+- **Honest budget.** Refinements that cost more (pottery, sushi, brunch) push the
+  tally over and turn it red rather than hiding it — the over-budget edge case
+  stays a visible feature.
+
+### Tradeoffs made
+- **Walkability is framing, not geography.** "Make it walkable" converts drive
+  legs to walks (≈1.8× the minutes) and recolors the route, but it does not
+  re-route around far-apart stops — so a couple of walks read as unrealistically
+  long. The whisper says so and offers to swap the far stops (not yet wired). A
+  real version needs a travel model; that's a live-mode concern.
+- **First-match, single intent.** One refinement applies per submit; compound
+  prompts ("walkable and under $50") take the first match only.
+- **Edits remain ephemeral.** Refinements live in the working plan, not the
+  persisted store, so a reload returns to the generated plan (same as reorder).
+
+### Known limitations
+- The refine bar is below the fold on desktop; scroll-to-change mitigates it, but
+  a sticky refine affordance would be better — likely an early M3/polish item.
+- The intent vocabulary is small and SF-plan-specific (it keys off "painting",
+  "dinner", etc.). New curated plans would need their own anchors.
+- You noted the *initial* generation still doesn't honor the prompt (asked for
+  walkable, got drives). M2 only addresses this reactively (via refinement); the
+  generator itself is still demo-mode-fixed. See next.
+
+### Recommended next
+- **Make generation honor intent (M2.5).** The deepest fix for your "it doesn't
+  listen" feeling is to read vibes/keywords from the landing prompt and bias the
+  *first* draft (e.g. a walkable prompt generates a walking-first plan), so the
+  refinement loop starts from a plan that already feels heard.
+- Then **M3: export & handoff** — wire the inert Export bar (Google Maps route,
+  Copy itinerary, Web Share), with Apple Maps scoped to a single pin.
+
+---
+
 ## v0.3 — Calm & cohesion (workspace foundation)
 
 _Branch: `claude/m1-calm-cohesion` · Milestone M1 of the post-pivot roadmap_

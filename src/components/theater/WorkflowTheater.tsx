@@ -1,39 +1,90 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import type { Plan, TimelineItem } from "@/lib/types";
 import { useTheater } from "@/lib/useTheater";
 import { resequence } from "@/lib/schedule";
+import { applyRefinement } from "@/lib/refine";
 import { StepTicker } from "./StepTicker";
 import { StylizedMap } from "./StylizedMap";
 import { PlanHeader } from "@/components/experience/PlanHeader";
 import { Timeline } from "@/components/experience/Timeline";
-import { RefinementBar } from "@/components/experience/RefinementBar";
+import { RefinementBar, type Whisper } from "@/components/experience/RefinementBar";
 import { ExportBar } from "@/components/experience/ExportBar";
 import { spring } from "@/lib/motion";
 
 // Orchestrates the reveal: the AI workflow checklist plays on the left while the
 // map fills with pins and a route on the right; then the checklist cross-fades
-// into the real itinerary. The reveal is a settle, not a cut.
+// into the real itinerary. From there it's a living workspace — reorder and
+// natural-language refinements mutate a working copy of the plan in place.
 export function WorkflowTheater({ plan }: { plan: Plan }) {
   const { activeStep, completed, done, skip } = useTheater();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // The user's working order of the day. Drag-to-reorder mutates this; the map
-  // and the schedule recompute from it. We re-sync only when the plan itself
-  // changes (e.g. a fresh generation), never on every render.
-  const [order, setOrder] = useState<TimelineItem[]>(plan.items);
-  useEffect(() => setOrder(plan.items), [plan.id, plan.items]);
+  // A working copy of the plan. Drag-to-reorder and refinements mutate this; the
+  // map, timeline, and budget all recompute from it. We re-sync only when the
+  // underlying plan changes (e.g. a fresh generation), never on every render.
+  const [workPlan, setWorkPlan] = useState<Plan>(plan);
+  const [dirty, setDirty] = useState(false);
+  // Items touched by the last refinement, so the timeline can flag them as
+  // freshly revised. Bumping `key` re-triggers the highlight even on a repeat.
+  const [revised, setRevised] = useState<{ ids: string[]; entering: string[]; key: number }>({
+    ids: [],
+    entering: [],
+    key: 0,
+  });
+  const [whisper, setWhisper] = useState<Whisper | null>(null);
+  const revisedTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    // Resync only when a genuinely new plan arrives — never on in-place edits,
+    // which would wipe the user's refinements.
+    setWorkPlan(plan);
+    setDirty(false);
+    setWhisper(null);
+    setRevised({ ids: [], entering: [], key: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan.id]);
 
   const dayStart = plan.items[0]?.start ?? "10:00";
-  const display = useMemo(() => resequence(order, dayStart), [order, dayStart]);
-  const orderedPlan = useMemo<Plan>(
-    () => ({ ...plan, items: display }),
-    [plan, display],
+  const display = useMemo(
+    () => resequence(workPlan.items, dayStart),
+    [workPlan.items, dayStart],
   );
+  const orderedPlan = useMemo<Plan>(
+    () => ({ ...workPlan, items: display }),
+    [workPlan, display],
+  );
+
+  const handleReorder = (items: TimelineItem[]) => {
+    setWorkPlan((p) => ({ ...p, items }));
+    setDirty(true);
+  };
+
+  const handleRefine = (prompt: string) => {
+    const result = applyRefinement(workPlan, prompt);
+    setWhisper({ text: result.summary, matched: result.matched, key: Date.now() });
+    if (!result.matched) return;
+    setWorkPlan(result.plan);
+    setDirty(true);
+    setRevised((r) => ({ ids: result.changedIds, entering: result.enteringIds, key: r.key + 1 }));
+    clearTimeout(revisedTimer.current);
+    revisedTimer.current = setTimeout(
+      () => setRevised((r) => ({ ...r, ids: [], entering: [] })),
+      2200,
+    );
+  };
+
+  const handleReset = () => {
+    clearTimeout(revisedTimer.current);
+    setWorkPlan(plan);
+    setDirty(false);
+    setWhisper(null);
+    setRevised({ ids: [], entering: [], key: 0 });
+  };
 
   const phase = done ? 99 : activeStep;
   const showWeather = phase >= 1;
@@ -88,12 +139,15 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
                   transition={spring.gentle}
                 >
                   <Timeline
-                    items={order}
+                    items={workPlan.items}
                     display={display}
                     show={showTimeline}
                     activeId={activeId}
                     onHover={setActiveId}
-                    onReorder={setOrder}
+                    onReorder={handleReorder}
+                    revisedIds={revised.ids}
+                    enteringIds={revised.entering}
+                    revisionKey={revised.key}
                   />
                 </motion.div>
               )}
@@ -123,7 +177,13 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
               transition={{ ...spring.gentle, delay: 0.5 }}
               className="mt-3 flex flex-col gap-3"
             >
-              <RefinementBar />
+              <RefinementBar
+                onRefine={handleRefine}
+                whisper={whisper}
+                onDismissWhisper={() => setWhisper(null)}
+                dirty={dirty}
+                onReset={handleReset}
+              />
               <ExportBar />
             </motion.div>
           )}
