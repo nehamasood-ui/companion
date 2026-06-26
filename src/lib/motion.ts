@@ -4,12 +4,11 @@ import type { Transition, Variants } from "framer-motion";
 // physical personality so the product feels like one considered object.
 
 export const spring = {
-  // The default — gentle, premium, slightly weighted.
   gentle: { type: "spring", stiffness: 210, damping: 26, mass: 0.9 } as Transition,
-  // For things that should land with a little authority (cards settling).
   settle: { type: "spring", stiffness: 320, damping: 30, mass: 1 } as Transition,
-  // Snappy for hover/press micro-interactions.
   snappy: { type: "spring", stiffness: 480, damping: 32 } as Transition,
+  /** Map pins — soft landing, no bounce. */
+  pin: { type: "spring", stiffness: 260, damping: 28, mass: 0.85 } as Transition,
 };
 
 export const ease = {

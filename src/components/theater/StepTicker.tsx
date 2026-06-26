@@ -1,22 +1,22 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
-import { THEATER_STEPS } from "@/lib/theater";
+import { Check } from "lucide-react";
+import type { TheaterStep } from "@/lib/theater";
 import { spring } from "@/lib/motion";
 
-// The visible "multiple AI systems working together" sequence. Lives at the
-// top of the canvas during the theater and fades away on settle.
 export function StepTicker({
+  steps,
   activeStep,
   completed,
 }: {
+  steps: TheaterStep[];
   activeStep: number;
   completed: number;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-1.5">
-      {THEATER_STEPS.map((step, i) => {
+    <div className="flex flex-col gap-1">
+      {steps.map((step, i) => {
         const isDone = completed > i;
         const isActive = !isDone && activeStep === i;
         const isPending = !isDone && !isActive;
@@ -24,44 +24,42 @@ export function StepTicker({
         return (
           <motion.div
             key={step.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{
-              opacity: isPending ? 0.35 : 1,
-              y: 0,
-            }}
-            transition={{ ...spring.gentle, delay: i * 0.04 }}
-            className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: isPending ? 0.4 : 1, y: 0 }}
+            transition={{ ...spring.gentle, delay: i * 0.03 }}
+            className="flex items-center gap-2.5 rounded-xl px-2.5 py-2"
             style={{
               background: isActive ? "rgba(91,87,214,0.06)" : "transparent",
             }}
           >
-            <span className="relative flex h-7 w-7 shrink-0 items-center justify-center">
+            <span className="relative flex h-6 w-6 shrink-0 items-center justify-center">
               <AnimatePresence mode="wait" initial={false}>
                 {isDone ? (
                   <motion.span
                     key="done"
-                    initial={{ scale: 0.4, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={spring.settle}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
                   >
-                    <Check className="h-4 w-4" strokeWidth={2.5} />
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                   </motion.span>
                 ) : isActive ? (
                   <motion.span
                     key="active"
-                    initial={{ scale: 0.6, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-primary/30 bg-surface text-primary"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="relative flex h-6 w-6 items-center justify-center rounded-full border border-primary/30 bg-surface text-primary"
                   >
-                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.25} />
+                    <span className="absolute inset-1 rounded-full bg-primary/15 animate-pulse-soft" />
+                    <step.icon className="relative h-3 w-3" strokeWidth={1.75} />
                   </motion.span>
                 ) : (
                   <motion.span
                     key="pending"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-muted"
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-line bg-surface text-muted"
                   >
-                    <step.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    <step.icon className="h-3 w-3" strokeWidth={1.75} />
                   </motion.span>
                 )}
               </AnimatePresence>

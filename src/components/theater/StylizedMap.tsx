@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import type { Plan } from "@/lib/types";
 import { projectPlaces, type Point } from "@/lib/geo";
-import { ease } from "@/lib/motion";
+import { ease, spring } from "@/lib/motion";
 
 const VIEW_W = 520;
 const VIEW_H = 380;
@@ -41,7 +41,7 @@ export function StylizedMap({
   const routeD = useMemo(() => smoothPath(points), [points]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-3xl border border-line bg-[#F3F4F8]">
+    <div className="relative h-full w-full overflow-hidden rounded-xl border border-line bg-[#F3F4F8] lg:rounded-2xl">
       <svg
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         className="h-full w-full"
@@ -115,17 +115,15 @@ export function StylizedMap({
           return (
             <motion.g
               key={item.id}
-              initial={{ opacity: 0, y: -22, scale: 0.5 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={
                 showPins
-                  ? { opacity: 1, y: 0, scale: isActive ? 1.18 : 1 }
-                  : { opacity: 0, y: -22, scale: 0.5 }
+                  ? { opacity: 1, y: 0, scale: isActive ? 1.1 : 1 }
+                  : { opacity: 0, y: -8, scale: 1 }
               }
               transition={{
-                type: "spring",
-                stiffness: 420,
-                damping: 18,
-                delay: showPins ? i * 0.12 : 0,
+                ...spring.pin,
+                delay: showPins ? i * 0.1 : 0,
               }}
               style={{ transformOrigin: "center", transformBox: "fill-box" }}
             >

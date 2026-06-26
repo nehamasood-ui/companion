@@ -71,3 +71,6 @@ export interface PlanRequest {
   partySize: number;
   vibes: string[];
 }
+
+/** Parsed constraints surfaced in the workspace header. */
+export type { ParsedIntent, IntentConstraint } from "./intent";

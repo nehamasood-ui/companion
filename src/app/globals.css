@@ -56,7 +56,27 @@ body {
   }
 }
 
-/* Thin, unobtrusive scrollbars. */
+/* Unified workspace surface — one document, not floating cards. */
+.workspace-canvas {
+  box-shadow:
+    0 0 0 1px rgba(23, 23, 31, 0.04),
+    0 2px 4px rgba(23, 23, 31, 0.04),
+    0 16px 48px -20px rgba(23, 23, 31, 0.18);
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
 * {
   scrollbar-width: thin;
   scrollbar-color: theme("colors.line") transparent;
