@@ -8,6 +8,8 @@ import type { Plan, TimelineItem } from "@/lib/types";
 import { useTheater } from "@/lib/useTheater";
 import { resequence } from "@/lib/schedule";
 import { applyRefinement } from "@/lib/refine";
+import { buildTheaterSteps } from "@/lib/theater";
+import type { DetectedIntent } from "@/lib/generate";
 import { StepTicker } from "./StepTicker";
 import { StylizedMap } from "./StylizedMap";
 import { PlanHeader } from "@/components/experience/PlanHeader";
@@ -20,9 +22,16 @@ import { spring } from "@/lib/motion";
 // map fills with pins and a route on the right; then the checklist cross-fades
 // into the real itinerary. From there it's a living workspace — reorder and
 // natural-language refinements mutate a working copy of the plan in place.
-export function WorkflowTheater({ plan }: { plan: Plan }) {
+export function WorkflowTheater({
+  plan,
+  intents = [],
+}: {
+  plan: Plan;
+  intents?: DetectedIntent[];
+}) {
   const { activeStep, completed, done, skip } = useTheater();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const steps = useMemo(() => buildTheaterSteps(intents), [intents]);
 
   // A working copy of the plan. Drag-to-reorder and refinements mutate this; the
   // map, timeline, and budget all recompute from it. We re-sync only when the
@@ -129,7 +138,7 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
                   transition={{ duration: 0.4 }}
                   className="rounded-3xl border border-line bg-surface/70 p-4 shadow-card backdrop-blur sm:p-6"
                 >
-                  <StepTicker activeStep={activeStep} completed={completed} />
+                  <StepTicker steps={steps} activeStep={activeStep} completed={completed} />
                 </motion.div>
               ) : (
                 <motion.div

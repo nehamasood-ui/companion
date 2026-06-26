@@ -75,6 +75,22 @@ export const cheaperFoodAlt: AltActivity = {
   why: "City-famous burritos — generous, shareable, and easy on the budget.",
 };
 
+export const scenicAlt: AltActivity = {
+  type: "walk",
+  title: "Hilltop viewpoint",
+  place: {
+    name: "Corona Heights Park",
+    neighborhood: "Castro",
+    lat: 37.7654,
+    lng: -122.4385,
+    category: "Lookout",
+    rating: 4.8,
+    priceLevel: 1,
+  },
+  costPerPerson: 0,
+  why: "Trade the indoor hour for a short climb to 360° city-and-bay views — free and unforgettable.",
+};
+
 /** A full item, inserted near the start of the day. */
 export const brunchStop: TimelineItem = {
   id: "i-brunch",

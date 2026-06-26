@@ -1,4 +1,5 @@
 import { Brain, CloudSun, MapPin, Route, CalendarClock, type LucideIcon } from "lucide-react";
+import type { DetectedIntent } from "./generate";
 
 // The five-act "AI workflow" the user watches before the reveal. Each act is
 // not decoration — it assembles a real, persisting piece of the workspace in
@@ -23,3 +24,34 @@ export const THEATER_STEPS: TheaterStep[] = [
 ];
 
 export const TOTAL_THEATER_MS = THEATER_STEPS.reduce((sum, s) => sum + s.duration, 0);
+
+// Reflect detected intent in the reveal copy so the theater feels like it's
+// working on *your* request — "Optimizing a walkable route", not generic. Only
+// the copy changes; durations stay fixed so the clock is unaffected.
+export function buildTheaterSteps(intents: DetectedIntent[]): TheaterStep[] {
+  const has = (id: string) => intents.some((i) => i.id === id);
+  const labels = intents.map((i) => i.label);
+
+  return THEATER_STEPS.map((step) => {
+    switch (step.id) {
+      case "understand":
+        return labels.length ? { ...step, detail: `Tuning for ${labels.join(" · ")}` } : step;
+      case "places":
+        if (has("scenic"))
+          return { ...step, label: "Finding scenic spots", detail: "Open-air stops, lookouts, and views" };
+        if (has("walkable"))
+          return { ...step, label: "Finding walkable spots", detail: "Clustered close enough to stroll" };
+        return step;
+      case "route":
+        return has("walkable")
+          ? { ...step, label: "Optimizing a walkable route", detail: "Most on-foot, least backtracking" }
+          : step;
+      case "itinerary":
+        return has("budget")
+          ? { ...step, detail: "Sequencing the day within budget" }
+          : step;
+      default:
+        return step;
+    }
+  });
+}

@@ -6,6 +6,68 @@ and a recommendation for what to tackle next.
 
 ---
 
+## v0.5 — Generation honors intent
+
+_Branch: `claude/m2_5-generation-intent` · Milestone M2.5 of the post-pivot roadmap_
+
+### What was built
+- **The first draft now reflects the prompt.** Before the theater reveal even
+  plays, the landing prompt + vibes are parsed for intent and folded into the
+  curated plan, so the generated day already feels heard — not a fixed plan you
+  then have to fix. Signals: walkable / less-driving, cheap / budget / under $N,
+  brunch, sushi, pottery, scenic / outdoors.
+- **Reuses the refinement engine.** `refine.ts` was refactored into a composable
+  intent registry (`detectIntents`, `applyIntent`) that powers *both* single-shot
+  refinements (M2) and composed generation (`lib/generate.ts`). One source of
+  truth — generation and refinement can't drift apart.
+- **Composition with conflict handling.** Multiple intents fold in priority order
+  (content/structure first, budget last). "walkable + sushi + under $50" yields a
+  walking-first plan with sushi kept and the budget trimmed around it.
+- **Intent-aware theater copy.** The reveal narrates the request — "Tuning for
+  walkable · sushi · under $50", "Finding scenic spots", "Optimizing a walkable
+  route", "Sequencing the day within budget" — so even the animation feels
+  responsive. (Copy only; the clock is untouched.)
+
+### Key product decisions
+- **Directive-only matching to avoid overfitting.** Bare keywords break the
+  showcase prompt itself ("a *scenic walk*… *painting*… $60"). So: "walkable"/
+  "walking"/"less driving" — never bare "walk"; explicitly-named stops (painting)
+  are protected from vibe/budget intents; and budget only swaps when the plan
+  actually exceeds the cap. Net: the canonical prompt stays pristine while real
+  directives clearly respond.
+- **Honest composition over forced satisfaction.** When intents genuinely
+  conflict (a $45 omakase "under $50"), the engine keeps what you explicitly
+  asked for, trims elsewhere, sets the cap, and lets the budget bar go red —
+  rather than silently deleting your sushi. Budget-aware, not budget-forced.
+- **Conflict precedence:** explicit activity beats vibe on a shared slot (pottery
+  wins over scenic); budget composes last and protects everything already added.
+
+### Tradeoffs made
+- **Curated, deterministic, English-ish.** Detection is regex over a small
+  synonym set, keyed to the SF plan's anchors ("painting", "dinner"). It's not
+  real NLU — but it's built behind one interface so a live Claude call can slot
+  in later. The chips and landing examples steer users toward what's understood.
+- **Single trim pass for budget.** It swaps the priciest unprotected stop once;
+  it doesn't iterate to force an impossible cap. Honest red bar instead.
+- **Same ephemerality as before** — generated/refined state isn't persisted across
+  a reload.
+
+### Known limitations
+- Vocabulary is small and SF-specific; a new curated plan needs its own anchors.
+- Walkability is still framing, not geography (carried over from M2): it relabels
+  and recolors but doesn't re-route around far stops.
+- A genuinely novel prompt produces the default plan. That's the intended
+  graceful fallback, but it means "surprise me" won't surprise.
+
+### Recommended next
+- **M3: export & handoff** — wire the inert Export bar (Google Maps route, Copy
+  itinerary, Web Share), Apple Maps scoped to a single pin. The product now reads
+  intent and iterates; letting people *use* the plan is the natural close.
+- Smaller polish candidates surfaced along the way: a sticky refine affordance
+  (the bar is below the fold), and persisting edits across reload.
+
+---
+
 ## v0.4 — The refinement loop
 
 _Branch: `claude/m2-refinement-loop` · Milestone M2 of the post-pivot roadmap_

@@ -2,21 +2,24 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
-import { THEATER_STEPS } from "@/lib/theater";
+import type { TheaterStep } from "@/lib/theater";
 import { spring } from "@/lib/motion";
 
 // The visible "multiple AI systems working together" sequence. Lives at the
-// top of the canvas during the theater and fades away on settle.
+// top of the canvas during the theater and fades away on settle. Steps are
+// passed in so the copy can reflect the user's detected intent.
 export function StepTicker({
+  steps,
   activeStep,
   completed,
 }: {
+  steps: TheaterStep[];
   activeStep: number;
   completed: number;
 }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-1.5">
-      {THEATER_STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const isDone = completed > i;
         const isActive = !isDone && activeStep === i;
         const isPending = !isDone && !isActive;

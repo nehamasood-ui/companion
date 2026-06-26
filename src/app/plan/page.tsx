@@ -8,6 +8,7 @@ import type { Plan } from "@/lib/types";
 
 export default function PlanPage() {
   const storedPlan = useCompanion((s) => s.plan);
+  const storedIntents = useCompanion((s) => s.intents);
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch from the persisted store, and never dead-end:
@@ -19,5 +20,5 @@ export default function PlanPage() {
   }
 
   const plan: Plan = storedPlan ?? sfPlan;
-  return <WorkflowTheater plan={plan} />;
+  return <WorkflowTheater plan={plan} intents={storedIntents ?? []} />;
 }
