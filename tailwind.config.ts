@@ -34,7 +34,7 @@ const config: Config = {
       fontSize: {
         // Generous, premium type scale
         display: ["clamp(2.4rem, 5vw, 3.75rem)", { lineHeight: "1.04", letterSpacing: "-0.03em" }],
-        title: ["1.5rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+        title: ["1.375rem", { lineHeight: "1.25", letterSpacing: "-0.02em" }],
       },
       borderRadius: {
         xl: "1rem",
@@ -58,6 +58,7 @@ const config: Config = {
       },
       animation: {
         "gradient-drift": "gradient-drift 18s ease-in-out infinite",
+        "pulse-soft": "pulse-soft 2s ease-in-out infinite",
       },
     },
   },

@@ -5,19 +5,22 @@ export interface Point {
   y: number;
 }
 
+export interface FitBounds {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+}
+
 /**
- * Projects a set of lat/lng places into an SVG coordinate space.
- *
- * We don't need true cartographic accuracy for the ambient map — we just need
- * the relative arrangement of the pins to read correctly. We fit the bounding
- * box of the points into the viewport with padding, and flip the y-axis so
- * north renders up.
+ * Projects lat/lng into SVG space with uniform scale so pins are not
+ * stretched. Points are centered in the viewport with padding.
  */
 export function projectPlaces(
   places: Place[],
   width: number,
   height: number,
-  padding = 40,
+  padding = 36,
 ): Point[] {
   if (places.length === 0) return [];
 
@@ -29,20 +32,47 @@ export function projectPlaces(
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
 
-  const spanLat = maxLat - minLat || 1;
-  const spanLng = maxLng - minLng || 1;
+  const spanLat = maxLat - minLat || 0.008;
+  const spanLng = maxLng - minLng || 0.008;
 
-  // Preserve aspect roughly by using the larger span as the scale basis.
   const innerW = width - padding * 2;
   const innerH = height - padding * 2;
+  const scale = Math.min(innerW / spanLng, innerH / spanLat);
+
+  const usedW = spanLng * scale;
+  const usedH = spanLat * scale;
+  const offsetX = padding + (innerW - usedW) / 2;
+  const offsetY = padding + (innerH - usedH) / 2;
 
   return places.map((p) => {
     const nx = (p.lng - minLng) / spanLng;
     const ny = (p.lat - minLat) / spanLat;
     return {
-      x: padding + nx * innerW,
-      // Flip y so higher latitude is higher on screen.
-      y: padding + (1 - ny) * innerH,
+      x: offsetX + nx * usedW,
+      y: offsetY + (1 - ny) * usedH,
     };
   });
+}
+
+/** Tight viewBox around projected pins — removes excess empty map area. */
+export function fitBounds(points: Point[], pad = 28): FitBounds {
+  if (points.length === 0) {
+    return { minX: 0, minY: 0, width: 520, height: 380 };
+  }
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const minX = Math.min(...xs) - pad;
+  const minY = Math.min(...ys) - pad;
+  const maxX = Math.max(...xs) + pad;
+  const maxY = Math.max(...ys) + pad;
+  return {
+    minX,
+    minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+export function viewBoxString(bounds: FitBounds): string {
+  return `${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`;
 }
