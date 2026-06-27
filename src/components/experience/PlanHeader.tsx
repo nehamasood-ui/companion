@@ -82,11 +82,7 @@ export function PlanHeader({
             animate={{ opacity: 1, height: "auto" }}
             className={intent ? "mt-3 border-t border-line pt-3" : "mt-3"}
           >
-            <BudgetTally
-              plan={plan}
-              show={settled}
-              budgetCap={intent?.budgetCap}
-            />
+            <BudgetTally plan={plan} show={settled} />
           </motion.div>
         )}
       </AnimatePresence>

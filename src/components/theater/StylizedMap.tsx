@@ -3,14 +3,13 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import type { Plan } from "@/lib/types";
-import { projectPlaces, type Point } from "@/lib/geo";
+import { projectPlaces, fitBounds, viewBoxString } from "@/lib/geo";
 import { ease, spring } from "@/lib/motion";
 
-const VIEW_W = 520;
-const VIEW_H = 380;
+const BASE_W = 520;
+const BASE_H = 340;
 
-/** A gentle smoothed path through the points so the route reads as a journey. */
-function smoothPath(points: Point[]): string {
+function smoothPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) return "";
   let d = `M ${points[0].x} ${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
@@ -35,17 +34,19 @@ export function StylizedMap({
   activeId?: string | null;
 }) {
   const points = useMemo(
-    () => projectPlaces(plan.items.map((i) => i.place), VIEW_W, VIEW_H, 56),
+    () => projectPlaces(plan.items.map((i) => i.place), BASE_W, BASE_H, 40),
     [plan],
   );
+  const bounds = useMemo(() => fitBounds(points, 32), [points]);
+  const vb = useMemo(() => viewBoxString(bounds), [bounds]);
   const routeD = useMemo(() => smoothPath(points), [points]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl border border-line bg-[#F3F4F8] lg:rounded-2xl">
+    <div className="relative aspect-[3/2] w-full max-h-[220px] overflow-hidden rounded-xl border border-line bg-[#F3F4F8] sm:max-h-[240px] lg:rounded-2xl">
       <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        viewBox={vb}
         className="h-full w-full"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={`Map of ${plan.city} with ${plan.items.length} stops`}
       >
@@ -60,44 +61,48 @@ export function StylizedMap({
           </linearGradient>
         </defs>
 
-        {/* Land */}
-        <rect width={VIEW_W} height={VIEW_H} fill="#F3F4F8" />
-
-        {/* Abstract bay/ocean to the west + north (SF's coastline reads left/top). */}
-        <path
-          d={`M0,0 L150,0 Q120,90 150,150 Q90,210 130,300 Q70,340 0,330 Z`}
-          fill="url(#water)"
-          opacity={0.9}
-        />
-        <path
-          d={`M0,${VIEW_H} L0,300 Q120,330 200,${VIEW_H} Z`}
-          fill="url(#water)"
-          opacity={0.7}
+        <rect
+          x={bounds.minX}
+          y={bounds.minY}
+          width={bounds.width}
+          height={bounds.height}
+          fill="#F3F4F8"
         />
 
-        {/* Soft parks */}
-        <circle cx={170} cy={120} r={46} fill="#DCE9D6" opacity={0.8} />
-        <circle cx={120} cy={250} r={34} fill="#DCE9D6" opacity={0.7} />
+        <path
+          d={`M${bounds.minX},${bounds.minY} L${bounds.minX + bounds.width * 0.25},${bounds.minY} Q${bounds.minX + bounds.width * 0.2},${bounds.minY + bounds.height * 0.35} ${bounds.minX + bounds.width * 0.28},${bounds.minY + bounds.height * 0.55} Z`}
+          fill="url(#water)"
+          opacity={0.85}
+        />
 
-        {/* Faint street grid for texture */}
-        <g stroke="#E2E4EC" strokeWidth={1}>
-          {Array.from({ length: 9 }).map((_, i) => (
-            <line key={`v${i}`} x1={(i + 1) * 52} y1={0} x2={(i + 1) * 52} y2={VIEW_H} />
-          ))}
-          {Array.from({ length: 7 }).map((_, i) => (
-            <line key={`h${i}`} x1={0} y1={(i + 1) * 52} x2={VIEW_W} y2={(i + 1) * 52} />
+        <circle
+          cx={bounds.minX + bounds.width * 0.35}
+          cy={bounds.minY + bounds.height * 0.3}
+          r={bounds.width * 0.08}
+          fill="#DCE9D6"
+          opacity={0.75}
+        />
+
+        <g stroke="#E2E4EC" strokeWidth={0.75} opacity={0.6}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <line
+              key={`v${i}`}
+              x1={bounds.minX + ((i + 1) * bounds.width) / 7}
+              y1={bounds.minY}
+              x2={bounds.minX + ((i + 1) * bounds.width) / 7}
+              y2={bounds.minY + bounds.height}
+            />
           ))}
         </g>
 
-        {/* Route */}
         {routeD && (
           <motion.path
             d={routeD}
             fill="none"
             stroke="url(#route)"
-            strokeWidth={3}
+            strokeWidth={2.5}
             strokeLinecap="round"
-            strokeDasharray="1 7"
+            strokeDasharray="1 6"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={
               showRoute
@@ -108,42 +113,41 @@ export function StylizedMap({
           />
         )}
 
-        {/* Pins */}
         {points.map((pt, i) => {
           const item = plan.items[i];
           const isActive = activeId === item.id;
           return (
             <motion.g
               key={item.id}
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={
                 showPins
                   ? { opacity: 1, y: 0, scale: isActive ? 1.1 : 1 }
-                  : { opacity: 0, y: -8, scale: 1 }
+                  : { opacity: 0, y: -6, scale: 1 }
               }
               transition={{
                 ...spring.pin,
-                delay: showPins ? i * 0.1 : 0,
+                delay: showPins ? i * 0.08 : 0,
               }}
               style={{ transformOrigin: "center", transformBox: "fill-box" }}
             >
               {isActive && (
-                <circle cx={pt.x} cy={pt.y} r={20} fill="#5B57D6" opacity={0.12} />
+                <circle cx={pt.x} cy={pt.y} r={16} fill="#5B57D6" opacity={0.12} />
               )}
               <circle
                 cx={pt.x}
                 cy={pt.y}
-                r={13}
+                r={11}
                 fill="#fff"
-                stroke={isActive ? "#5B57D6" : "#5B57D6"}
-                strokeWidth={isActive ? 3 : 2}
-                style={{ filter: "drop-shadow(0 4px 8px rgba(23,23,31,0.18))" }}
+                stroke="#5B57D6"
+                strokeWidth={isActive ? 2.5 : 2}
+                style={{ filter: "drop-shadow(0 3px 6px rgba(23,23,31,0.15))" }}
               />
               <text
                 x={pt.x}
-                y={pt.y + 4}
+                y={pt.y + 3.5}
                 textAnchor="middle"
-                fontSize={12}
+                fontSize={10}
                 fontWeight={700}
                 fill="#3F3BB0"
               >

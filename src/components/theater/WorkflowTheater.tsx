@@ -9,6 +9,7 @@ import { useCompanion } from "@/lib/store";
 import { parseIntent } from "@/lib/intent";
 import { useTheater } from "@/lib/useTheater";
 import { buildTheaterSteps, THEATER_STEPS } from "@/lib/theater";
+import { buildPlan, initialVariant, type PlanVariant } from "@/lib/plans";
 import { StepTicker } from "./StepTicker";
 import { StylizedMap } from "./StylizedMap";
 import { PlanHeader } from "@/components/experience/PlanHeader";
@@ -25,11 +26,37 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
   const { activeStep, completed, done, skip } = useTheater();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Backfill intent for sessions persisted before intent parsing shipped.
+  // Backfill intent / budget / variant for sessions persisted before this release.
   useEffect(() => {
-    const { request, intent } = useCompanion.getState();
-    if (request && !intent) {
-      useCompanion.setState({ intent: parseIntent(request) });
+    const state = useCompanion.getState();
+    const { request, intent, planVariant, userBudgetCap, plan } = state;
+    if (!request) return;
+
+    const patches: Partial<ReturnType<typeof useCompanion.getState>> = {};
+
+    if (!intent) {
+      patches.intent = parseIntent(request);
+    }
+
+    const resolvedIntent = patches.intent ?? intent;
+    if (resolvedIntent && userBudgetCap === 75 && resolvedIntent.budgetCap != null) {
+      patches.userBudgetCap = resolvedIntent.budgetCap;
+    }
+
+    if (planVariant === "default" && resolvedIntent) {
+      const variant = initialVariant(resolvedIntent);
+      if (variant === "walkable") patches.planVariant = "walkable";
+    }
+
+    if (Object.keys(patches).length > 0) {
+      const variant = (patches.planVariant ?? planVariant) as PlanVariant;
+      const cap = patches.userBudgetCap ?? userBudgetCap;
+      patches.plan = buildPlan(request, variant, cap);
+      useCompanion.setState(patches);
+    } else if (!plan) {
+      useCompanion.setState({
+        plan: buildPlan(request, planVariant, userBudgetCap),
+      });
     }
   }, []);
 
@@ -82,7 +109,7 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
             settled={done}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)] lg:items-start">
             {/* Timeline column — protagonist + refinement */}
             <div className="order-2 flex min-w-0 flex-col border-t border-line lg:order-1 lg:border-r lg:border-t-0">
               <div className="flex-1 px-3 py-3 sm:px-4 sm:py-3.5">
@@ -109,6 +136,7 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
                       transition={spring.gentle}
                     >
                       <Timeline
+                        key={plan.id}
                         plan={plan}
                         show={showTimeline}
                         activeId={activeId}
@@ -126,16 +154,15 @@ export function WorkflowTheater({ plan }: { plan: Plan }) {
               )}
             </div>
 
-            {/* Map column — ambient evidence */}
-            <div className="order-1 flex flex-col border-t border-line p-3 sm:p-3.5 lg:order-2 lg:border-t-0">
-              <div className="min-h-[200px] flex-1 sm:min-h-[240px] lg:min-h-[320px]">
-                <StylizedMap
-                  plan={plan}
-                  showPins={showPins}
-                  showRoute={showRoute}
-                  activeId={activeId}
-                />
-              </div>
+            {/* Map column — compact ambient reference */}
+            <div className="order-1 border-t border-line p-3 sm:p-3.5 lg:sticky lg:top-4 lg:order-2 lg:self-start lg:border-t-0">
+              <StylizedMap
+                key={plan.id}
+                plan={plan}
+                showPins={showPins}
+                showRoute={showRoute}
+                activeId={activeId}
+              />
               <TravelSummary plan={plan} intent={intent} show={done} />
             </div>
           </div>

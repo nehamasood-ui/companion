@@ -1,12 +1,11 @@
 "use client";
 
-import { Car, Footprints, TrainFront } from "lucide-react";
+import { Footprints, Car, TrainFront, CheckCircle2 } from "lucide-react";
 import type { Plan, ParsedIntent } from "@/lib/types";
 import { formatTravelProfile, summarizeTravel } from "@/lib/travel";
 
 const MODE_ICON = { walk: Footprints, drive: Car, transit: TrainFront };
 
-/** Compact route profile shown beneath the map — evidence of how the day moves. */
 export function TravelSummary({
   plan,
   intent,
@@ -21,12 +20,18 @@ export function TravelSummary({
   const summary = summarizeTravel(plan);
   const profile = formatTravelProfile(summary);
   const Icon = MODE_ICON[summary.dominantMode];
+  const allWalk =
+    summary.driveLegs === 0 &&
+    summary.transitLegs === 0 &&
+    summary.walkLegs > 0;
+
+  const wantsWalkable =
+    intent?.prefersWalkable || intent?.prefersNoDriving || plan.id.includes("walkable");
 
   const intentMismatch =
-    intent &&
-    ((intent.prefersWalkable && summary.driveMinutes > summary.walkMinutes) ||
-      (intent.prefersNoDriving && summary.driveLegs > 0) ||
-      (intent.minimalWalking && summary.walkMinutes > 20));
+    wantsWalkable &&
+    !allWalk &&
+    (summary.driveLegs > 0 || summary.driveMinutes > summary.walkMinutes);
 
   return (
     <div className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-bg/80 px-3 py-2.5">
@@ -34,12 +39,18 @@ export function TravelSummary({
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-ink">{profile}</p>
         <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
-          {summary.driveLegs + summary.walkLegs + summary.transitLegs} transfers
-          between {plan.items.length} stops
+          {summary.walkLegs + summary.driveLegs + summary.transitLegs} transfers
+          · {plan.items.length} stops
         </p>
+        {allWalk && wantsWalkable && (
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-primary-ink">
+            <CheckCircle2 className="h-3 w-3" strokeWidth={2} />
+            Fully walkable route
+          </p>
+        )}
         {intentMismatch && (
           <p className="mt-1.5 text-[11px] leading-relaxed text-sunset">
-            Refine below to better match your constraints.
+            Refine to walkable to cluster stops on foot.
           </p>
         )}
       </div>
