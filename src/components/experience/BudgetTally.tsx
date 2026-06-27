@@ -12,15 +12,30 @@ export function BudgetTally({
 }: {
   plan: Plan;
   show?: boolean;
-  /** When parsed from the prompt, use this cap instead of the plan default. */
+  /** Parsed from the user's prompt — the only source for a spending cap. */
   budgetCap?: number;
 }) {
   const spent = totalSpend(plan);
-  const cap = budgetCap ?? plan.budgetPerPerson;
-  const ratio = Math.min(1, spent / cap);
-  const over = spent > cap;
-  const near = !over && ratio > 0.85;
 
+  // No cap in the prompt → show estimated spend only, not the demo plan's $60.
+  if (budgetCap == null) {
+    return (
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+          Per person
+        </span>
+        <span className="text-sm font-semibold tabular-nums text-ink-soft">
+          {plan.currency}
+          {spent}
+          <span className="font-normal text-muted"> estimated</span>
+        </span>
+      </div>
+    );
+  }
+
+  const ratio = Math.min(1, spent / budgetCap);
+  const over = spent > budgetCap;
+  const near = !over && ratio > 0.85;
   const color = over ? "#DC2626" : near ? "#D97706" : "#0EA5A4";
 
   return (
@@ -35,7 +50,7 @@ export function BudgetTally({
           <span className="font-normal text-muted">
             {" "}
             / {plan.currency}
-            {cap}
+            {budgetCap}
           </span>
         </span>
       </div>

@@ -12,6 +12,8 @@ export interface ParsedIntent {
   /** Activity keywords spotted in the prompt. */
   themes: string[];
   budgetCap?: number;
+  /** Display label for the parsed budget constraint. */
+  budgetLabel?: string;
   prefersWalkable: boolean;
   prefersNoDriving: boolean;
   minimalWalking: boolean;
@@ -20,19 +22,65 @@ export interface ParsedIntent {
   budgetConscious: boolean;
 }
 
-const BUDGET_RE = /(?:under|below|max|≤|<)\s*\$?\s*(\d+)/i;
-const BUDGET_AROUND_RE = /(?:around|about|~\s*)\$?\s*(\d+)/i;
-
 function has(text: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(text));
 }
 
-function extractBudget(text: string): number | undefined {
-  const under = text.match(BUDGET_RE);
-  if (under) return Number(under[1]);
-  const around = text.match(BUDGET_AROUND_RE);
-  if (around) return Number(around[1]);
-  if (/\bcheap\b|\baffordable\b|\bbudget\b|\blow[- ]cost\b/i.test(text)) return 50;
+interface BudgetParse {
+  cap: number;
+  /** Human label for constraint chips, e.g. "Under $50" or "Around $60". */
+  label: string;
+}
+
+/** Pull a per-person budget from the prompt — never from curated demo data. */
+function extractBudget(text: string, vibes: string[] = []): BudgetParse | undefined {
+  const lower = text.toLowerCase();
+
+  const under = lower.match(
+    /(?:under|below|max|less than|at most|≤|<)\s*\$?\s*(\d+)/i,
+  );
+  if (under) {
+    const cap = Number(under[1]);
+    return { cap, label: `Under $${cap}` };
+  }
+
+  const around = lower.match(
+    /(?:around|about|roughly|~)\s*\$?\s*(\d+)/i,
+  );
+  if (around) {
+    const cap = Number(around[1]);
+    return { cap, label: `Around $${cap}` };
+  }
+
+  const each = lower.match(
+    /\$\s*(\d+)\s*(?:each|pp|per person|a person|per head)/i,
+  );
+  if (each) {
+    const cap = Number(each[1]);
+    return { cap, label: `$${cap} each` };
+  }
+
+  const dollarsEach = lower.match(/(\d+)\s*dollars?\s*(?:each|pp|per person)?/i);
+  if (dollarsEach) {
+    const cap = Number(dollarsEach[1]);
+    return { cap, label: `$${cap} each` };
+  }
+
+  // Trailing dollar amount — e.g. "...and dinner. $60" or "...sushi, $50"
+  const allDollar = [...lower.matchAll(/\$\s*(\d+)/g)];
+  if (allDollar.length > 0) {
+    const cap = Number(allDollar[allDollar.length - 1][1]);
+    return { cap, label: `$${cap}` };
+  }
+
+  if (vibes.some((v) => v.toLowerCase() === "budget")) {
+    return { cap: 50, label: "Budget · ~$50" };
+  }
+
+  if (/\bcheap\b|\baffordable\b|\blow[- ]cost\b/i.test(lower)) {
+    return { cap: 50, label: "Budget · ~$50" };
+  }
+
   return undefined;
 }
 
@@ -91,9 +139,8 @@ export function parseIntent(request: PlanRequest): ParsedIntent {
     /\bnature\b/,
     /\bhike\b/,
   ]);
-  const budgetConscious =
-    !!extractBudget(text) ||
-    has(text, [/\bcheap\b/, /\baffordable\b/, /\bbudget\b/, /\bunder \$?\d+/]);
+  const budget = extractBudget(full, request.vibes);
+  const budgetConscious = !!budget;
 
   const constraints: IntentConstraint[] = [];
 
@@ -102,12 +149,8 @@ export function parseIntent(request: PlanRequest): ParsedIntent {
   if (minimalWalking) constraints.push({ id: "minimal-walk", label: "Minimal walking" });
   if (foodFocused) constraints.push({ id: "food", label: "Food-focused" });
   if (outdoorsy) constraints.push({ id: "outdoors", label: "Outdoors & scenic" });
-  if (budgetConscious) {
-    const cap = extractBudget(text);
-    constraints.push({
-      id: "budget",
-      label: cap ? `Under $${cap}` : "Budget-conscious",
-    });
+  if (budget) {
+    constraints.push({ id: "budget", label: budget.label });
   }
 
   for (const vibe of request.vibes) {
@@ -131,7 +174,8 @@ export function parseIntent(request: PlanRequest): ParsedIntent {
     promptExcerpt: excerpt,
     constraints: constraints.slice(0, 8),
     themes,
-    budgetCap: extractBudget(text),
+    budgetCap: budget?.cap,
+    budgetLabel: budget?.label,
     prefersWalkable,
     prefersNoDriving,
     minimalWalking,

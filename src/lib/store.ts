@@ -26,8 +26,13 @@ interface CompanionState {
   reset: () => void;
 }
 
-function materializePlan(request: PlanRequest): Plan {
-  return { ...sfPlan, partySize: request.partySize || sfPlan.partySize };
+function materializePlan(request: PlanRequest, intent: ParsedIntent): Plan {
+  return {
+    ...sfPlan,
+    partySize: request.partySize || sfPlan.partySize,
+    // Budget cap comes from the prompt, not the curated showcase default.
+    ...(intent.budgetCap != null ? { budgetPerPerson: intent.budgetCap } : {}),
+  };
 }
 
 export const useCompanion = create<CompanionState>()(
@@ -45,7 +50,7 @@ export const useCompanion = create<CompanionState>()(
         set({
           request,
           intent,
-          plan: materializePlan(request),
+          plan: materializePlan(request, intent),
           refinementDraft: "",
           appliedRefinements: [],
           refinementPulse: false,
